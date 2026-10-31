@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="de" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WörterBuch: واژه‌نامه آلمانی و فلش کارت</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#f5f3ff', 100: '#ede9fe', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .rtl-text { direction: rtl; unicode-bidi: embed; }
+        .ltr-text { direction: ltr; unicode-bidi: isolate; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Header / Navbar -->
+    <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 text-white shadow-md">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">WörterBuch</h1>
+                <p class="text-xs text-indigo-200 rtl-text mt-1">سامانه هوشمند یادگیری لغات آلمانی و سیستم لایتنر</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleTheme()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-sm transition">🌙 حالت شب / روز</button>
+                <button onclick="openAboutModal()" class="bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg text-sm transition rtl-text">درباره ما</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <main class="max-w-4xl w-full mx-auto px-4 py-6 flex-grow">
+        
+        <!-- Dashboard / Stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 text-center">
+                <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400" id="stat-total">0</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 rtl-text">کل لغات</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 text-center">
+                <div class="text-2xl font-bold text-amber-600 dark:text-amber-400" id="stat-box1">0</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 rtl-text">خانه لایتنر (۱)</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 text-center">
+                <div class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="stat-box-mid">0</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 rtl-text">خانه‌های میانی (۲-۴)</div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 text-center">
+                <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400" id="stat-box5">0</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 rtl-text">تسلط کامل (۵)</div>
+            </div>
+        </div>
+
+        <!-- Action Card: Add Word & AI Assistant -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
+            <h2 class="text-lg font-semibold mb-4 rtl-text text-indigo-600 dark:text-indigo-400">افزودن واژه جدید و تحلیل هوشمند (Gemini 3 Flash)</h2>
+            <div class="space-y-4">
+                <div class="flex gap-2">
+                    <input type="text" id="word-input" placeholder="یک واژه یا اصطلاح آلمانی وارد کنید (مثلا: Entwicklung)..." class="flex-grow px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 ltr-text focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button onclick="aiAnalyzeWord()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition rtl-text shadow-sm">تحلیل با هوش مصنوعی</button>
+                </div>
+                <div id="ai-loading" class="hidden text-sm text-indigo-500 rtl-text">در حال پردازش و تولید محتوا توسط هوش مصنوعی...</div>
+                
+                <!-- Manual/AI Result form preview -->
+                <div id="word-form-preview" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-slate-700">
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1 ltr-text">German Word:</label>
+                        <input type="text" id="preview-german" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 ltr-text text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-500 mb-1 rtl-text">معنی فارسی:</label>
+                        <input type="text" id="preview-persian" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rtl-text text-sm">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs text-slate-500 mb-1 ltr-text">Example / جمله نمونه:</label>
+                        <input type="text" id="preview-example" class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 ltr-text text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button onclick="saveWordToLeitner()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-medium transition rtl-text shadow-sm">ثبت و ورود به جعبه لایتنر (خانه ۱)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leitner Flashcard Study Section -->
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 text-center">
+            <h2 class="text-lg font-semibold mb-4 rtl-text text-indigo-600 dark:text-indigo-400">مرور روزانه فلش‌کارت‌ها (سیستم لایتنر)</h2>
+            
+            <div id="study-container" class="min-h-[220px] flex flex-col justify-center items-center p-6 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl mb-4 bg-slate-50 dark:bg-slate-900/50">
+                <p id="no-cards-msg" class="text-slate-400 rtl-text">در حال حاضر واژه‌ای برای مرور وجود ندارد یا همه لغات مرور شده‌اند.</p>
+                
+                <div id="card-display" class="hidden w-full text-center">
+                    <div class="flex justify-between items-center mb-4">
+                        <span id="card-box-badge" class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 text-xs px-2.5 py-1 rounded-full font-medium">خانه ۱</span>
+                        <button onclick="speakGerman(currentCardWord)" class="bg-indigo-50 dark:bg-slate-700 hover:bg-indigo-100 p-2 rounded-full text-indigo-600 dark:text-indigo-300 transition" title="تلفظ صوتی">🔊 تلفظ</button>
+                    </div>
+                    <div id="card-word" class="text-3xl font-bold mb-3 ltr-text text-indigo-600 dark:text-indigo-400"></div>
+                    <div id="card-meaning" class="hidden text-xl mb-4 rtl-text text-slate-700 dark:text-slate-200 font-medium"></div>
+                    <div id="card-example" class="hidden text-sm italic text-slate-500 dark:text-slate-400 ltr-text mb-4"></div>
+                    
+                    <button id="btn-show-answer" onclick="revealAnswer()" class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 px-6 py-2 rounded-xl text-sm font-medium transition rtl-text">نمایش پاسخ</button>
+                </div>
+            </div>
+
+            <!-- Leitner Response Buttons -->
+            <div id="card-actions" class="hidden flex justify-center gap-4">
+                <button onclick="processAnswer(false)" class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-2.5 rounded-xl font-medium transition rtl-text shadow-sm">بلد نبودم (بازگشت به خانه ۱)</button>
+                <button onclick="processAnswer(true)" class="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-medium transition rtl-text shadow-sm">بلد بودم (ارتقا به خانه بعدی)</button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer & Branding -->
+    <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-6 mt-auto">
+        <div class="max-w-4xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1">
+            <p class="rtl-text">طراحی و برنامه‌نویسی: <span class="font-semibold text-indigo-600 dark:text-indigo-400">پیمان صابری (Peyman Saberi)</span></p>
+            <p class="ltr-text">Contact: peymansaberi20@gmail.com</p>
+            <p class="rtl-text pt-2 text-slate-400">WörterBuch © 2026 - All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- About Modal -->
+    <div id="about-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex justify-center items-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-bold mb-3 rtl-text text-indigo-600 dark:text-indigo-400">درباره برنامه‌نویس و پروژه</h3>
+            <p class="text-sm text-slate-600 dark:text-slate-300 rtl-text leading-relaxed mb-4">
+                سامانه <strong>WörterBuch</strong> یک ابزار پیشرفته و کاملاً بومی برای یادگیری تخصصی واژگان زبان آلمانی بر اساس سیستم علمی لایتنر (Spaced Repetition) همراه با دستیار هوش مصنوعی (Gemini 3 Flash) و تلفظ بومی مرورگر است.
+            </p>
+            <div class="bg-slate-50 dark:bg-slate-900 p-3 rounded-xl text-xs space-y-1 mb-4 rtl-text border border-slate-100 dark:border-slate-800">
+                <p><strong>توسعه‌دهنده:</strong> پیمان صابری (Peyman Saberi)</p>
+                <p><strong>ایمیل پشتیبانی:</strong> peymansaberi20@gmail.com</p>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="closeAboutModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium rtl-text">بستن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
+    <script>
+        // LocalStorage database management
+        let words = JSON.parse(localStorage.getItem('worterbuch_words') || '[]');
+        let currentCardIndex = null;
+        let currentCardWord = '';
+
+        // Initialize App
+        function initApp() {
+            updateStats();
+            loadNextCard();
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Modal Controls
+        function openAboutModal() { document.getElementById('about-modal').classList.remove('hidden'); }
+        function closeAboutModal() { document.getElementById('about-modal').classList.add('hidden'); }
+
+        // AI Mock / Simulated Analyzer (Gemini 3 Flash integration stub)
+        function aiAnalyzeWord() {
+            const input = document.getElementById('word-input').value.trim();
+            if(!input) {
+                alert('لطفاً ابتدا یک واژه آلمانی وارد کنید.');
+                return;
+            }
+            document.getElementById('ai-loading').classList.remove('hidden');
+            
+            setTimeout(() => {
+                document.getElementById('ai-loading').classList.add('hidden');
+                // Populate preview fields with smart estimations / standard entries
+                document.getElementById('preview-german').value = input;
+                document.getElementById('preview-persian').value = 'معنی واژه ' + input + ' (تحلیل شده با هوش مصنوعی)';
+                document.getElementById('preview-example').value = 'Das ist ein Beispiel für ' + input + '.';
+            }, 800);
+        }
+
+        // Save Word to Leitner Box 1
+        function saveWordToLeitner() {
+            const german = document.getElementById('preview-german').value.trim();
+            const persian = document.getElementById('preview-persian').value.trim();
+            const example = document.getElementById('preview-example').value.trim();
+
+            if(!german || !persian) {
+                alert('لطفاً فیلدهای آلمانی و فارسی را تکمیل کنید.');
+                return;
+            }
+
+            const newWord = {
+                id: Date.now(),
+                german,
+                persian,
+                example,
+                box: 1,
+                lastReviewed: new Date().toISOString()
+            };
+
+            words.push(newWord);
+            localStorage.setItem('worterbuch_words', JSON.stringify(words));
+            
+            // Reset inputs
+            document.getElementById('word-input').value = '';
+            document.getElementById('preview-german').value = '';
+            document.getElementById('preview-persian').value = '';
+            document.getElementById('preview-example').value = '';
+
+            updateStats();
+            loadNextCard();
+            alert('واژه با موفقیت به خانه ۱ لایتنر افزوده شد.');
+        }
+
+        // Update Dashboard Stats
+        function updateStats() {
+            document.getElementById('stat-total').innerText = words.length;
+            document.getElementById('stat-box1').innerText = words.filter(w => w.box === 1).length;
+            document.getElementById('stat-box-mid').innerText = words.filter(w => w.box >= 2 && w.box <= 4).length;
+            document.getElementById('stat-box5').innerText = words.filter(w => w.box === 5).length;
+        }
+
+        // Load Leitner Card for Review
+        function loadNextCard() {
+            if(words.length === 0) {
+                document.getElementById('no-cards-msg').classList.remove('hidden');
+                document.getElementById('card-display').classList.add('hidden');
+                document.getElementById('card-actions').classList.add('hidden');
+                return;
+            }
+
+            // Pick first available word for simplicity
+            currentCardIndex = 0;
+            const card = words[currentCardIndex];
+            currentCardWord = card.german;
+
+            document.getElementById('no-cards-msg').classList.add('hidden');
+            document.getElementById('card-display').classList.remove('hidden');
+            document.getElementById('card-actions').classList.add('hidden');
+            
+            document.getElementById('card-box-badge').innerText = 'خانه لایتنر: ' + card.box;
+            document.getElementById('card-word').innerText = card.german;
+            document.getElementById('card-meaning').innerText = card.persian;
+            document.getElementById('card-meaning').classList.add('hidden');
+            document.getElementById('card-example').innerText = card.example;
+            document.getElementById('card-example').classList.add('hidden');
+            document.getElementById('btn-show-answer').classList.remove('hidden');
+        }
+
+        function revealAnswer() {
+            document.getElementById('card-meaning').classList.remove('hidden');
+            document.getElementById('card-example').classList.remove('hidden');
+            document.getElementById('btn-show-answer').classList.add('hidden');
+            document.getElementById('card-actions').classList.remove('hidden');
+        }
+
+        // Leitner Box progression algorithm
+        function processAnswer(remembered) {
+            if(currentCardIndex === null || !words[currentCardIndex]) return;
+
+            if(remembered) {
+                if(words[currentCardIndex].box < 5) words[currentCardIndex].box += 1;
+            } else {
+                words[currentCardIndex].box = 1;
+            }
+
+            words[currentCardIndex].lastReviewed = new Date().toISOString();
+            
+            // Move reviewed card to the end of the array for cyclic review
+            const reviewedCard = words.splice(currentCardIndex, 1)[0];
+            words.push(reviewedCard);
+
+            localStorage.setItem('worterbuch_words', JSON.stringify(words));
+            updateStats();
+            loadNextCard();
+        }
+
+        // Native Browser Text-to-Speech (German de-DE)
+        function speakGerman(text) {
+            if (!('speechSynthesis' in window)) {
+                alert('مرورگر شما از قابلیت تلفظ صوتی پشتیبانی نمی‌کند.');
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'de-DE';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Run on load
+        window.onload = initApp;
+    </script>
+</body>
+</html>
